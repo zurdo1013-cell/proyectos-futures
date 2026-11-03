@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>organizador de Estudios</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Arial;background:#8FB1DF;color:#0F2347}
+header{background:#D3E5FB;text-align:center;padding:18px}
+header h1{margin:0;color:#0B2F6B}
+header p{margin:6px}
+.layout{display:flex;gap:14px;padding:14px;min-height:calc(100vh - 120px)}
+nav{background:white;padding:12px;border-radius:10px;width:190px;flex-shrink:0}
+nav button{display:block;width:100%;padding:12px;margin-bottom:6px;border:0;background:white;text-align:left;cursor:pointer;border-radius:6px;color:#0F2347}
+nav button:hover{background:#CFE2FB}
+main{flex:1;min-width:0}
+.panel{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:stretch}
+.card{background:white;border-radius:10px;padding:16px;min-width:0}
+.formulario{max-height:calc(100vh - 170px);overflow-y:auto;min-height:350px}
+h2{font-size:17px;margin:0 0 15px}
+label{display:block;font-weight:600;margin:12px 0 5px}
+input,select{width:100%;padding:10px;border:1px solid #DBE4F2;border-radius:5px;background:white;color:#0F2347}
+.botones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+button.accion{padding:11px 5px;color:white;border:0;border-radius:5px;cursor:pointer;font-weight:bold}
+.registrar{background:#021B4D}
+.editar{background:#E28A07}
+.limpiar{background:#034D0F}
+.eliminar{background:#F00D09}
+button:hover{filter:brightness(.9)}
+#mensaje{font-size:13px;overflow-wrap:anywhere}
+.tabla-contenedor{overflow:auto;max-height:calc(100vh - 280px)}
+table{border-collapse:collapse;width:100%;background:white;font-size:13px}
+th,td{padding:10px;border-bottom:1px solid #DBE4F2;text-align:left}
+th{background:#D3E5FB;position:sticky;top:0}
+tr.seleccionada{background:#CFE2FB}
+.estado{font-weight:bold}
+.estadisticas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.estadisticas .card{text-align:center}
+footer{background:#F5F9FF;text-align:center;padding:12px;font-size:13px}
+.oculto{display:none!important}
+@media(max-width:900px){
+ .layout{flex-direction:column}
+ nav{width:100%}
+ nav button{display:inline-block;width:auto}
+ .panel{grid-template-columns:1fr}
+ .formulario{max-height:65vh}
+ .estadisticas{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+
+<body>
+<header>
+<h1>🎓 Gestor de Estudios</h1>
+<p>Organiza tus materias, controla tus notas y cumple tus metas</p>
+</header>
+
+<div class="layout">
+<nav>
+<button onclick="seccion('inicio')">🏠 Inicio</button>
+<button onclick="seccion('materias')">📚 Materias</button>
+<button onclick="seccion('calendario')">📅 Calendario</button>
+<button onclick="seccion('config')">⚙️ Configuración</button>
+</nav>
+
+<main>
+<section id="inicio">
+<div class="panel">
+
+<div class="card formulario">
+<h2 id="tituloForm">➕ Registrar / Editar Materia</h2>
+
+<form id="form">
+<label>Año de la carrera:</label>
+<select id="anio" required>
+<option value="">Seleccionar año</option>
+<option>Primer año</option>
+<option>Segundo año</option>
+<option>Tercer año</option>
+<option>Cuarto año</option>
+<option>Quinto año</option>
+</select>
+
+<label>Materia:</label>
+<input id="materia" required placeholder="Nombre de la materia">
+
+<label>Profesor:</label>
+<input id="profesor" required>
+
+<label>Nota (0-100):</label>
+<input id="nota" type="number" min="0" max="100" step="0.01" required>
+
+<label>Fecha de entrega:</label>
+<input id="fecha" type="date" required>
+
+<label>Estado:</label>
+<select id="estado">
+<option>Pendiente</option>
+<option>Completada</option>
+</select>
+
+<div class="botones">
+<button class="accion registrar" type="submit" id="btnGuardar">💾 Registrar</button>
+<button class="accion editar" type="button" onclick="editar()">✏️ Editar</button>
+<button class="accion limpiar" type="button" onclick="limpiar()">🧹 Limpiar</button>
+<button class="accion eliminar" type="button" onclick="borrar()">🗑 Borrar</button>
+</div>
+<p id="mensaje"></p>
+</form>
+</div>
+
+<div class="card">
+<h2>🔍 Buscar materias</h2>
+<input id="buscar" placeholder="Buscar materia o profesor..." oninput="dibujar()">
+<p>Selecciona una fila para editar o borrar sus datos.</p>
+<div class="tabla-contenedor">
+<table>
+<thead><tr><th>Año</th><th>Materia</th><th>Profesor</th><th>Nota</th><th>Entrega</th><th>Estado</th></tr></thead>
+<tbody id="tabla"></tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<div class="estadisticas">
+<div class="card"><h2 id="total">0</h2><p>Registradas</p></div>
+<div class="card"><h2 id="completadas">0</h2><p>Completadas</p></div>
+<div class="card"><h2 id="pendientes">0</h2><p>Pendientes</p></div>
+<div class="card"><h2 id="proxima">—</h2><p>Próxima entrega</p></div>
+</div>
+</section>
+
+<section id="materias" class="card oculto">
+<h2>📚 Todas las materias</h2>
+<p>Selecciona una materia en la tabla de Inicio para administrarla.</p>
+<button onclick="seccion('inicio')">Volver al inicio</button>
+</section>
+
+<section id="calendario" class="card oculto">
+<h2>📅 Calendario de entregas</h2>
+<div id="listaCalendario"></div>
+</section>
+
+<section id="config" class="card oculto">
+<h2>⚙️ Configuración y respaldos</h2>
+<button onclick="exportar()">Exportar datos</button>
+<button onclick="document.getElementById('archivo').click()">Importar datos</button>
+<input id="archivo" type="file" accept=".json" class="oculto" onchange="importar(event)">
+<p>Los datos se guardan en este navegador.</p>
+</section>
+</main>
+</div>
+
+<footer>● Gestor de Estudios v1.0</footer>
+
+<script>
+let datos = JSON.parse(localStorage.getItem("materiasEstudio") || "[]");
+let seleccionado = null;
+
+const $ = id => document.getElementById(id);
+
+function guardarDatos(){
+ localStorage.setItem("materiasEstudio", JSON.stringify(datos));
+ dibujar();
+}
+
+function limpiar(){
+ $("form").reset();
+ seleccionado = null;
+ $("tituloForm").textContent = "➕ Registrar / Editar Materia";
+ $("btnGuardar").textContent = "💾 Registrar";
+ $("mensaje").textContent = "";
+}
+
+$("form").addEventListener("submit", e => {
+ e.preventDefault();
+
+ const registro = {
+  anio:$("anio").value,
+  materia:$("materia").value.trim(),
+  profesor:$("profesor").value.trim(),
+  nota:Number($("nota").value),
+  fecha:$("fecha").value,
+  estado:$("estado").value
+ };
+
+ if(registro.nota < 0 || registro.nota > 100){
+  $("mensaje").textContent = "La nota debe estar entre 0 y 100.";
+  return;
+ }
+
+ const duplicado = datos.some((m,i) =>
+  i !== seleccionado &&
+  m.anio === registro.anio &&
+  m.materia.toLowerCase() === registro.materia.toLowerCase()
+ );
+
+ if(duplicado){
+  $("mensaje").textContent = "Esa materia ya está registrada en ese año.";
+  return;
+ }
+
+ if(seleccionado !== null){
+  datos[seleccionado] = registro;
+  $("mensaje").textContent = "Materia actualizada correctamente.";
+ }else{
+  datos.push(registro);
+  $("mensaje").textContent = "Materia registrada correctamente.";
+ }
+
+ guardarDatos();
+ limpiar();
+});
+
+function editar(){
+ if(seleccionado === null){
+  alert("Selecciona una materia de la tabla.");
+  return;
+ }
+ const m = datos[seleccionado];
+ for(const campo of ["anio","materia","profesor","nota","fecha","estado"]){
+  $(campo).value = m[campo];
+ }
+ $("tituloForm").textContent = "✏️ Editar Materia";
+ $("btnGuardar").textContent = "💾 Guardar cambios";
+ $("form").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function borrar(){
+ if(seleccionado === null){
+  alert("Selecciona una materia de la tabla.");
+  return;
+ }
+ if(confirm("¿Deseas eliminar esta materia?")){
+  datos.splice(seleccionado,1);
+  limpiar();
+  guardarDatos();
+ }
+}
+
+function dibujar(){
+ const filtro = $("buscar").value.toLowerCase();
+ $("tabla").innerHTML = "";
+
+ datos.forEach((m,i) => {
+  if(!(m.materia+" "+m.profesor+" "+m.anio).toLowerCase().includes(filtro)) return;
+
+  const tr = document.createElement("tr");
+  if(i === seleccionado) tr.classList.add("seleccionada");
+
+  [m.anio,m.materia,m.profesor,m.nota,m.fecha,m.estado].forEach(valor => {
+   const td = document.createElement("td");
+   td.textContent = valor;
+   tr.appendChild(td);
+  });
+
+  tr.onclick = () => {
+   seleccionado = i;
+   dibujar();
+  };
+
+  $("tabla").appendChild(tr);
+ });
+
+ $("total").textContent = datos.length;
+ $("completadas").textContent = datos.filter(m=>m.estado==="Completada").length;
+ $("pendientes").textContent = datos.filter(m=>m.estado==="Pendiente").length;
+
+ const futuras = datos.filter(m=>m.estado==="Pendiente" && m.fecha>=hoy());
+ futuras.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+ $("proxima").textContent = futuras.length ? futuras[0].fecha : "—";
+
+ $("listaCalendario").innerHTML = "";
+ [...datos].sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(m=>{
+  const p = document.createElement("p");
+  p.textContent = m.fecha+" — "+m.materia+" ("+m.estado+")";
+  $("listaCalendario").appendChild(p);
+ });
+}
+
+function hoy(){
+ const d = new Date();
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function seccion(id){
+ document.querySelectorAll("main > section").forEach(s=>s.classList.add("oculto"));
+ $(id).classList.remove("oculto");
+}
+
+function exportar(){
+ const blob = new Blob([JSON.stringify(datos,null,2)],{type:"application/json"});
+ const a = document.createElement("a");
+ a.href = URL.createObjectURL(blob);
+ a.download = "respaldo_estudios.json";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function importar(event){
+ const archivo = event.target.files[0];
+ if(!archivo) return;
+
+ const lector = new FileReader();
+ lector.onload = () => {
+  try{
+   const nuevos = JSON.parse(lector.result);
+   if(!Array.isArray(nuevos)) throw Error();
+   if(confirm("¿Reemplazar los registros actuales?")){
+    datos = nuevos;
+    limpiar();
+    guardarDatos();
+   }
+  }catch{
+   alert("El archivo no contiene un respaldo válido.");
+  }
+  event.target.value = "";
+ };
+ lector.readAsText(archivo);
+}
+
+dibujar();
+</script>
+</body>
+</html>
